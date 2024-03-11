@@ -1,0 +1,17 @@
+---
+
+
+- name: K3s uninstall playbook
+  hosts: all
+  become: yes
+
+
+  tasks:
+   - name: Uninstall script
+     shell: sh /usr/local/bin/k3s-agent-uninstall.sh
+   
+
+   - name: Check service status
+     service:
+      name: k3s-agent
+      enabled: false    

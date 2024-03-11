@@ -1,0 +1,172 @@
+---
+ - name: Setup Kubernetes worker nodes on Debian
+   hosts: all
+   become: yes
+
+
+
+   vars:
+     master_k3s: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          31313435323930383035343937343235616532383930336263323936363636373830363531393337
+          3830353662656165393031636632323461343862613637300a656336623633343964303838376462
+          32656332353733306564353133366438363938646564393861373739663731323930616237643563
+          3337313137346266620a393936653064376339393537663466383736353465663261626232396431
+          34616432316330306531393135653862356636316438396331316466626331346138
+     personal_token: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          34323032373762363362656463383536393863343638623662663738656337376433386464343265
+          3663666337323134363564633963393639346234366433370a343433633238386237653936626139
+          32343133643830393835393338386337396162313439373134643435383563353032633237623132
+          3035346537376539360a346332366631666561343538373131393931336234316232376533333632
+          33366538386461373938366332633465616264363466336537396531326234633733346539373433
+          3866313534386531373735323364303538613537616537323262
+ 
+     my_node_token: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          33346235373539396338393761356431623632393861316432656261376562303266666565626666
+          3937303864663265633135616662383231383633323561360a396663613234656531663236353438
+          61346263343062633235393061333230303132303932666338616237666466343436656462323461
+          3565363662333661620a626365343432363662643166346236313662616335656461636336663164
+          62323332306666393762353237633439623134616632653534663338663132633432636138616539
+          34383361613465316263633638643039356436663063616338346532333534663061313332626535
+          62323663346431353563333230313237343961356561623262376430666461303338396632313835
+          34386636396535613435373165366336663164376637336362363333643064373063616230366531
+          63616665653137623934303633366464356639363464333633306534633137326530
+   
+   tasks:
+     
+
+
+     - name: check Username
+       command: whoami
+       register: username 
+
+
+     - name: Set fact whoami 
+       set_fact:
+         login_user: "{{ username.stdout }}"
+ 
+     - name: Var debug
+       debug:
+         var: login_user
+
+          
+
+     - name: Check master IP
+       shell: hostname -I | awk '{print $1}'
+       delegate_to: 127.0.0.1
+       register: master_IP
+     
+
+     - name: Set fact hostname
+       set_fact:
+         master_ip: "{{ master_IP.stdout }}"    
+
+
+     - name: Var debug
+       debug:
+         var: master_ip
+     
+
+
+     - name: Set env variables to master node
+       shell: export  {{ item  }}
+       loop:
+          - "K3S_NODE_NAME={{ ansible_nodename }}"
+          - "K3S_EXTERNAL_IP={{ master_ip }}"
+          - "KUBECONFIG=/etc/rancher/k3s/k3s.yaml"  
+
+
+  
+        
+
+
+
+
+     - name: Install packages
+       apt: name={{ item }} state=latest
+       with_items:
+        - git
+        - python3
+        - tree
+        - nano 
+        - openrc 
+          
+     - name: Touch openrc file
+       shell: touch /run/openrc/softlevel
+   
+     
+
+     - name: Make dir for git repo
+       file:
+         path: /home/{{ login_user  }}/k3s
+         state: directory
+           
+
+
+     - name: Clone repo
+       ansible.builtin.git:
+        repo: https://{{ personal_token }}@github.com/Kl1rik/k3s.git
+        dest: /home/{{ login_user  }}/k3s
+        clone: yes
+        update: yes
+
+     - name: Enable Django managment scripts
+       shell: chmod +x  {{ item }}
+       with_items:
+         - "/home/{{ login_user  }}/k3s/django_app/k3s_django_run.sh"
+
+         - "/home/{{ login_user  }}/k3s/django_app/k3s_django_delete.sh"
+     
+
+
+
+     - name: Mkdir k3s config dir
+       file:
+        path: /home/{{ login_user }}/.kube
+        state: directory
+
+     
+
+     - name: Open 6443 ports for node connection
+       shell: ufw allow {{ item }}
+       with_items:
+         - "6443"
+         - "6443/tcp" 
+
+     - name: Copy config to agents
+       template:
+         src: /home/kl1rik/k3s/k3s_cluster.j2
+         dest: /home/{{ login_user }}/.kube/config 
+         mode: 0600 
+
+
+     - name: Setup & connect nodes
+       shell: curl -sfL https://get.k3s.io | K3S_URL=https://{{ master_ip }}:6443 K3S_TOKEN={{ my_node_token }}  KUBECONFIG=/home/{{ login_user }}/.kube/config sh -
+
+
+
+
+
+     - name: Check agent node status
+       shell: service k3s-agent status
+       register: status_agent
+
+
+
+     - name: Var debug
+       debug:
+        var: status_agent
+
+
+     - name: Trigger init Django deployment
+       shell: sh /home/{{ login_user }}/k3s/django_app/k3s_django_run.sh
+      
+    
+
+
+
+
+
+
