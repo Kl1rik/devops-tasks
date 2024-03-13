@@ -160,11 +160,58 @@
         var: status_agent
 
 
+     - name: Set namespace django
+       kubernetes.core.k8s:
+        name: django
+        api_version: v1
+        kind: Namespace
+        state: present
+
+
+     - name: Set namespace adminer
+       kubernetes.core.k8s:
+        name: adminer
+        api_version: v1
+        kind: Namespace
+        state: present
+     
+
+     - name: Set namespace db
+       kubernetes.core.k8s:
+        name: db
+        api_version: v1
+        kind: Namespace
+        state: present
+
+    #  - name: Example test service
+    #    kubernetes.core.k8s:
+    #     state: present
+    #     definition:
+    #      apiVersion: v1
+    #      kind: Service
+    #      metadata:
+    #       name: web
+    #       namespace: testing
+    #       labels:
+    #        app: galaxy
+    #        service: web
+    #      spec:
+    #       selector:
+    #        app: galaxy
+    #        service: web
+    #       ports:
+    #        - protocol: TCP
+    #          targetPort: 8000
+    #          name: port-8000-tcp
+    #          port: 8000
+
+
+
      - name: Trigger init Django deployment
        shell: sh /home/{{ login_user }}/k3s/django_app/k3s_django_run.sh
       
     
-
+     
 
 
 
