@@ -1,0 +1,105 @@
+---
+ - name: Setup Debian k3s master node
+   hosts: master
+   become: yes
+
+
+
+   vars:
+     user_node: vagrant
+     
+   
+   tasks:
+     - name: Update libs
+       shell: sudo apt -y update
+
+     - name: Install packages
+       apt: name={{ item }} state=latest
+       with_items:
+        - git
+        - python3
+        - tree
+        - htop
+        - vim
+        - neofetch
+        - ufw
+        - python3-pip
+
+     - name: Check master IP
+       shell: hostname -I | awk '{print $1}'
+       register: master_IP
+     
+     - name: create network file 
+       shell: touch /home/{{ user_node }}/master_ip.env
+
+     - name: create config file 
+       shell: touch /home/{{ user_node }}/k3s_agent.yaml
+
+     - name: Save master ip for file
+       shell: hostname -I | awk '{print $1}' > /home/{{ user_node }}/master_ip.env
+
+     - name: Set fact hostname ip
+       set_fact:
+         master_ip: "{{ master_IP.stdout }}"   
+
+     - name: Open 6443 ports for node connection
+       shell: ufw allow {{ item }}
+       with_items:
+         - "6443"
+         - "6443/tcp"
+
+     - name: Var debug
+       debug:
+         var: master_ip
+     
+     - name: Trigger k3s master install script
+       shell: curl -sfL https://get.k3s.io | K3S_KUBECONFIG_MODE="644" sh -s
+    
+     - name: Check agent node status
+       systemd_service: 
+         name: k3s.service
+         enabled: yes
+     
+
+     - name: Grab token from master
+       shell: cat /var/lib/rancher/k3s/server/token
+       register: master_Token
+
+     - name: Save fact about master token
+       set_fact:
+          master_token: "{{ master_Token.stdout }}"
+
+     - name: Grab config from master
+       shell: cat /etc/rancher/k3s/k3s.yaml > /home/{{ user_node }}/k3s_agent.yaml
+
+     - name: Save key info for ansible host 
+       fetch:
+         src: /var/lib/rancher/k3s/server/token
+         dest: /tmp/key/
+         flat: yes
+
+     - name: Save ip info for ansible host 
+       fetch:
+         src: /home/{{ user_node }}/master_ip.env
+         dest: /tmp/ip/
+         flat: yes
+
+     - name: Save config info for ansible host 
+       fetch:
+         src: /home/{{ user_node }}/k3s_agent.yaml
+         dest: /tmp/config/
+         flat: yes
+
+
+
+     
+
+      
+
+
+
+
+  
+        
+
+

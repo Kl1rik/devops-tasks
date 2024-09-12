@@ -1,0 +1,6 @@
+
+[master]
+vagrant@192.168.111.131
+
+[worker]
+vagrant@192.168.111.130
