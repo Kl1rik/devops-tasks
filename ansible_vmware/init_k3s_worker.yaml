@@ -58,50 +58,15 @@
 
      
 
-
-     
-           
-
-
-    #  - name: Clone repo
-    #    ansible.builtin.git:
-    #     repo: https://{{ personal_token }}@github.com/Kl1rik/k3s.git
-    #     dest: /home/{{ login_user  }}/k3s
-    #     clone: yes
-    #     update: yes
-
-    #  - name: Enable Django managment scripts
-    #    shell: chmod +x  {{ item }}
-    #    with_items:
-    #      - "/home/{{ login_user  }}/k3s/django_app/k3s_django_run.sh"
-
-    #      - "/home/{{ login_user  }}/k3s/django_app/k3s_django_delete.sh"
-     
-
-
-
-    #  - name: Mkdir k3s config dir
-    #    file:
-    #     path: /home/{{ user_node }}/.kube
-    #     state: directory
-
-     
-
      - name: Open 6443 ports for node connection
        shell: ufw allow {{ item }}
        with_items:
          - "6443"
          - "6443/tcp" 
 
-    #  - name: Copy config to agents
-    #    template:
-    #      src: /home/kl1rik/k3s/k3s_cluster.j2
-    #      dest: /home/{{ login_user }}/.kube/config 
-    #      mode: 0600 
 
 
      - name: Setup & connect nodes
-      #  shell: curl -sfL https://get.k3s.io | K3S_URL=https://{{ master_ip }}:6443 K3S_TOKEN={{ my_node_token }}  KUBECONFIG=/home/{{ user_node }}/.kube/config sh -
        shell: curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent" K3S_NODE_NAME=k3s-worker-1 K3S_KUBECONFIG_MODE="644" K3S_URL=https://{{ master_ip }}:6443 K3S_TOKEN={{ master_token }}  sh -s -
        
 
@@ -115,40 +80,7 @@
 
 
 
-    #  - name: Var debug
-    #    debug:
-    #     var: status_agent
-
-
      
-
-    #  - name: Example test service
-    #    kubernetes.core.k8s:
-    #     state: present
-    #     definition:
-    #      apiVersion: v1
-    #      kind: Service
-    #      metadata:
-    #       name: web
-    #       namespace: testing
-    #       labels:
-    #        app: galaxy
-    #        service: web
-    #      spec:
-    #       selector:
-    #        app: galaxy
-    #        service: web
-    #       ports:
-    #        - protocol: TCP
-    #          targetPort: 8000
-    #          name: port-8000-tcp
-    #          port: 8000
-
-
-
-    #  - name: Trigger init Django deployment
-    #    shell: sh /home/{{ login_user }}/k3s/django_app/k3s_django_run.sh
-      
     
      
 
