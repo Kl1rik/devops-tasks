@@ -1,0 +1,33 @@
+version: '3'
+services:
+  server1:
+    image: ubuntucontainer350/lb_test_server:v2
+    ports:
+      - "8001:8000"
+    deploy:
+      replicas: 1
+    networks:
+      - app-network
+
+  server2:
+    image: ubuntucontainer350/lb_test_server:v2
+    ports:
+      - "8002:8000"
+    deploy:
+      replicas: 1
+    networks:
+      - app-network
+
+  server3:
+    image: ubuntucontainer350/lb_test_server:v2
+    ports:
+      - "8003:8000"
+    deploy:
+      replicas: 1
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
